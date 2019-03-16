@@ -12,6 +12,27 @@ namespace ChromeControlLibrary
 {
     public static class ChromeControl
     {
+        public static bool FocusWindow(int windowId)
+        {
+            NamedPipeClientStream pipeClient = new NamedPipeClientStream(".", "dataDyneChromeServerPipe", PipeDirection.InOut, PipeOptions.None, TokenImpersonationLevel.Impersonation);
+
+            pipeClient.Connect();
+
+            ServerCommunication serverCommunication = new ServerCommunication(pipeClient);
+            if (serverCommunication.ReadMessage() == "dataDyne Chrome Server")
+            {
+                serverCommunication.SendMessage($"focuswindow {windowId}");
+
+                JObject responseObject = serverCommunication.ReadMessageAsJObject();
+
+                string response = responseObject["text"].ToString();
+
+                return response == $"Window Id: {windowId} focused";
+            }
+
+            return false;
+        }
+
         public static bool CloseWindow(int windowId)
         {
             NamedPipeClientStream pipeClient = new NamedPipeClientStream(".", "dataDyneChromeServerPipe", PipeDirection.InOut, PipeOptions.None, TokenImpersonationLevel.Impersonation);
@@ -265,5 +286,55 @@ namespace ChromeControlLibrary
             url = "";
             return false;
         }
+
+        public static bool MoveWindow(int windowId, int xPos, int yPos)
+        {
+            NamedPipeClientStream pipeClient = new NamedPipeClientStream(".", "dataDyneChromeServerPipe", PipeDirection.InOut, PipeOptions.None, TokenImpersonationLevel.Impersonation);
+
+            pipeClient.Connect();
+
+            ServerCommunication serverCommunication = new ServerCommunication(pipeClient);
+            if (serverCommunication.ReadMessage() == "dataDyne Chrome Server")
+            {
+                serverCommunication.SendMessage($"movewindow {windowId} {xPos} {yPos}");
+
+                JObject responseObject = serverCommunication.ReadMessageAsJObject();
+
+                string response = responseObject["text"].ToString();
+                
+                return !response.Contains("invalid");
+            }
+            
+            return false;
+        }
+
+        public static bool ChangeWindowState(int windowId, ChromeWindowStates windowState)
+        {
+            NamedPipeClientStream pipeClient = new NamedPipeClientStream(".", "dataDyneChromeServerPipe", PipeDirection.InOut, PipeOptions.None, TokenImpersonationLevel.Impersonation);
+
+            pipeClient.Connect();
+
+            ServerCommunication serverCommunication = new ServerCommunication(pipeClient);
+            if (serverCommunication.ReadMessage() == "dataDyne Chrome Server")
+            {
+                serverCommunication.SendMessage($"changestate {windowId} {windowState.ToString().ToLower()}");
+
+                JObject responseObject = serverCommunication.ReadMessageAsJObject();
+
+                string response = responseObject["text"].ToString();
+
+                return !response.Contains("invalid");
+            }
+
+            return false;
+        }
+    }
+
+    public enum ChromeWindowStates
+    {
+        Normal,
+        Minimized,
+        Maximized,
+        Fullscreen,
     }
 }
