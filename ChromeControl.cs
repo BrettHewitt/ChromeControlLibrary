@@ -328,6 +328,44 @@ namespace ChromeControlLibrary
 
             return false;
         }
+
+        public static bool GetWindowPosition(int windowId, out int x, out int y)
+        {
+            NamedPipeClientStream pipeClient = new NamedPipeClientStream(".", "dataDyneChromeServerPipe", PipeDirection.InOut, PipeOptions.None, TokenImpersonationLevel.Impersonation);
+
+            pipeClient.Connect();
+
+            ServerCommunication serverCommunication = new ServerCommunication(pipeClient);
+            if (serverCommunication.ReadMessage() == "dataDyne Chrome Server")
+            {
+                serverCommunication.SendMessage($"getwindowpos {windowId}");
+
+                JObject responseObject = serverCommunication.ReadMessageAsJObject();
+
+                string response = responseObject["text"].ToString();
+
+                if (response.Contains("does not exist"))
+                {
+                    x = -9999;
+                    y = -9999;
+                    return false;
+                }
+
+                JObject ro = JObject.Parse(response);
+
+                var left = ro["Left"];
+                //string windowIdString = token.Value<string>("windowId");
+                var top = ro["Top"];
+
+                x = int.Parse(left.ToString());
+                y = int.Parse(top.ToString());
+                return true;
+            }
+
+            x = -9999;
+            y = -9999;
+            return false;
+        }
     }
 
     public enum ChromeWindowStates
